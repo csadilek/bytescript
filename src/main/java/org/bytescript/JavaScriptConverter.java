@@ -1,10 +1,17 @@
 package org.bytescript;
 
+import static org.apache.bcel.Repository.lookupClass;
+
+import java.beans.BeanInfo;
+import java.beans.Introspector;
+import java.beans.PropertyDescriptor;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.PrintWriter;
 import java.util.Date;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Stack;
 
 import org.apache.bcel.Constants;
@@ -22,23 +29,17 @@ import org.apache.bcel.classfile.LocalVariableTable;
 import org.apache.bcel.classfile.Method;
 import org.apache.bcel.classfile.Utility;
 import org.apache.bcel.generic.BasicType;
-import org.apache.bcel.generic.ConstantPoolGen;
 import org.apache.bcel.util.ByteSequence;
 import org.apache.bcel.util.ClassPath;
-
 /**
- * Derived from example code at http://bcel.sourceforge.net/JasminVisitor.java.
- *
- * @author Jonathan Fuerth <jfuerth@redhat.com>
+ * Derived from example code at http://bcel.sourceforge.net/JasminVisitor.java. 
  */
 public class JavaScriptConverter {
 
   public JavaScriptConverter() {
   }
 
-  public void convert(JavaClass clazz, PrintWriter out) throws IOException {
-    ConstantPoolGen cp = new ConstantPoolGen(clazz.getConstantPool());
-
+  public void convert(JavaClass clazz, PrintWriter out) throws Exception {        
     out.println("/* Produced by bytescript on " + new Date());
     out.println(" */");
 
@@ -53,7 +54,7 @@ public class JavaScriptConverter {
       out.println("// implements " + interfaces[i]);
     }
 
-    out.println("var " + jsClassName(clazz.getClassName()) + " = {");
+    out.println("class " + jsClassName(clazz.getClassName()) + " {");
 
     // static fields
     for (Field f : clazz.getFields()) {
@@ -61,21 +62,14 @@ public class JavaScriptConverter {
         writeField(f, out);
       }
     }
-
-    // instance fields
-    out.println("  \"instanceState\": {");
-    for (Field f : clazz.getFields()) {
-      if ((f.getModifiers() & Constants.ACC_STATIC) == 0) {
-        writeField(f, out);
-      }
-    }
-    out.println("  },");
-
-    for (Method m : clazz.getMethods()) {
+        
+    // methods
+    for (Method m : clazz.getMethods()) {      
       writeMethod(m, out);
     }
-
-    out.println("},");
+    
+    out.println("}");
+      
   }
 
   public void writeField(final Field field, final PrintWriter out) {
@@ -92,7 +86,7 @@ public class JavaScriptConverter {
   }
 
   /**
-   * Writes the JavaScript method declaration and code code of the method to the
+   * Writes the JavaScript method declaration and code of the method to the
    * given JavaScript output stream.
    *
    * @param m
@@ -100,23 +94,43 @@ public class JavaScriptConverter {
    * @param out
    *          The stream to write to
    */
-  private void writeMethod(final Method m, final PrintWriter out) throws IOException {
-    out.print("  \"" + m.getName() + m.getSignature() + "\" : function(");
+  private void writeMethod(final Method m, final PrintWriter out) throws IOException {    
+    final Code code = m.getCode();
+    final LocalVariableTable lvt = code.getLocalVariableTable();
+     
+    
+    if (m.getName().equals("<init>")) {
+      out.print("constructor ");
+    }
+    else if (m.getName().startsWith("get")) {
+      out.print("get ");
+      out.print(m.getName().replaceAll("get", "").toLowerCase());
+      
+    } else if (m.getName().startsWith("set")) {
+      out.print("set ");
+      out.print(m.getName().replaceAll("set", "").toLowerCase());      
+    }
+    else {
+      out.print("  \"" + m.getName() + m.getSignature() + "\" : function ");
+    }
+    out.print("(");
+    
     for (int i = 0; i < m.getArgumentTypes().length; i++) {
       if (i > 0) {
         out.print(", ");
       }
-      out.print("a" + i);
+      out.print(lvt.getLocalVariable(i+1).getName());
+      
     }
     out.println(") {");
 
-    Code code = m.getCode();
-    ByteSequence bytes = new ByteSequence(code.getCode());
-    Stack<Object> operandStack = new Stack<Object>();
+    
+    final Stack<Object> operandStack = new Stack<>();
+    final ByteSequence bytes = new ByteSequence(code.getCode());    
     while (bytes.available() > 0) {
-      out.println(processByteCode(bytes, operandStack, code.getLocalVariableTable(), code.getConstantPool(), false));
+      out.println(processByteCode(bytes, operandStack, lvt, code.getConstantPool(), false));
     }
-    out.println("  },");
+    out.println("}");
   }
 
   /**
@@ -363,27 +377,33 @@ public class JavaScriptConverter {
      * Access object/class fields.
      */
     case Constants.GETFIELD:
-      index = bytes.readUnsignedShort();
-      buf.append("\t\t" + cp.constantToString(index, Constants.CONSTANT_Fieldref));
-      if (1 == 1)
-        throw new RuntimeException("Not implemented: " + Constants.OPCODE_NAMES[opcode]);
+      index = bytes.readUnsignedShort();      
+      ConstantFieldref fieldref = (ConstantFieldref) cp.getConstant(index, Constants.CONSTANT_Fieldref);
+      ConstantNameAndType nameAndType = (ConstantNameAndType) cp.getConstant(fieldref.getNameAndTypeIndex(),
+          Constants.CONSTANT_NameAndType);
+      String fieldName = nameAndType.getName(cp);            
+      operandStack.push("this."+fieldName);
       break;
 
     case Constants.GETSTATIC: {
       index = bytes.readUnsignedShort();
-      ConstantFieldref fieldref = (ConstantFieldref) cp.getConstant(index, Constants.CONSTANT_Fieldref);
-      ConstantNameAndType nameAndType = (ConstantNameAndType) cp.getConstant(fieldref.getNameAndTypeIndex(),
+      fieldref = (ConstantFieldref) cp.getConstant(index, Constants.CONSTANT_Fieldref);
+      nameAndType = (ConstantNameAndType) cp.getConstant(fieldref.getNameAndTypeIndex(),
           Constants.CONSTANT_NameAndType);
-      String fieldName = nameAndType.getName(cp);
+      fieldName = nameAndType.getName(cp);
       operandStack.push(jsClassName(fieldref.getClass(cp)) + "[\"" + fieldName + "\"]");
     }
       break;
 
     case Constants.PUTFIELD:
       index = bytes.readUnsignedShort();
-      buf.append("\t\t" + cp.constantToString(index, Constants.CONSTANT_Fieldref));
-      if (1 == 1)
-        throw new RuntimeException("Not implemented: " + Constants.OPCODE_NAMES[opcode]);
+      fieldref = (ConstantFieldref) cp.getConstant(index, Constants.CONSTANT_Fieldref);
+      nameAndType = (ConstantNameAndType) cp.getConstant(fieldref.getNameAndTypeIndex(),
+          Constants.CONSTANT_NameAndType);
+      fieldName = nameAndType.getName(cp);
+      // TODO this obviously isn't sufficient.
+      LocalVariable var = (LocalVariable) operandStack.pop();
+      buf.append("this.").append(fieldName).append("=").append(var.getName()).append(";");   
       break;
 
     case Constants.PUTSTATIC:
@@ -511,8 +531,15 @@ public class JavaScriptConverter {
         throw new RuntimeException("Not implemented: " + Constants.OPCODE_NAMES[opcode]);
       break;
 
-    case Constants.RETURN:
-      buf.append("return;");
+    case Constants.RETURN:      
+      if (bytes.available() > 0) {
+        buf.append("return;");
+      }
+      operandStack.clear();
+      break;
+      
+    case Constants.ARETURN:
+      buf.append("return ").append(operandStack.pop()).append(";");
       operandStack.clear();
       break;
 
