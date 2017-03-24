@@ -44,8 +44,7 @@ public class JavaScriptConverter {
 
     out.println("// Source File " + clazz.getSourceFileName());
     out.println("// " + Utility.classOrInterface(clazz.getAccessFlags()) + " "
-            + Utility.accessToString(clazz.getAccessFlags(), true) + " "
-            + clazz.getClassName());
+        + Utility.accessToString(clazz.getAccessFlags(), true) + " " + clazz.getClassName());
     out.println("// extends " + clazz.getSuperclassName());
 
     String[] interfaces = clazz.getInterfaceNames();
@@ -85,8 +84,7 @@ public class JavaScriptConverter {
       ConstantValue constantValue = field.getConstantValue();
       if (constantValue != null) {
         out.print(constantValue); // XXX this is definitely broken
-      }
-      else {
+      } else {
         out.print("0");
       }
     }
@@ -94,10 +92,13 @@ public class JavaScriptConverter {
   }
 
   /**
-   * Writes the JavaScript method declaration and code code of the method to the given JavaScript output stream.
+   * Writes the JavaScript method declaration and code code of the method to the
+   * given JavaScript output stream.
    *
-   * @param m the method to convert to JavaScript
-   * @param out The stream to write to
+   * @param m
+   *          the method to convert to JavaScript
+   * @param out
+   *          The stream to write to
    */
   private void writeMethod(final Method m, final PrintWriter out) throws IOException {
     out.print("  \"" + m.getName() + m.getSignature() + "\" : function(");
@@ -142,7 +143,8 @@ public class JavaScriptConverter {
    *          always false except in the special case where this method calls
    *          itself
    */
-  private String processByteCode(final ByteSequence bytes, final Stack<Object> operandStack, LocalVariableTable localVariableTable, final ConstantPool cp, final boolean wide) throws IOException {
+  private String processByteCode(final ByteSequence bytes, final Stack<Object> operandStack,
+      LocalVariableTable localVariableTable, final ConstantPool cp, final boolean wide) throws IOException {
     int default_offset = 0, low, high, npairs;
     int index, vindex, constant;
     int[] match, jump_table;
@@ -152,8 +154,9 @@ public class JavaScriptConverter {
     StringBuilder buf = new StringBuilder();
     buf.append("// ").append(Constants.OPCODE_NAMES[opcode]).append("\n");
 
-    /* Special case: Skip (0-3) padding bytes, i.e., the
-     * following bytes are 4-byte-aligned
+    /*
+     * Special case: Skip (0-3) padding bytes, i.e., the following bytes are
+     * 4-byte-aligned
      */
     if ((opcode == Constants.TABLESWITCH) || (opcode == Constants.LOOKUPSWITCH)) {
       int remainder = bytes.getIndex() % 4;
@@ -193,7 +196,8 @@ public class JavaScriptConverter {
       }
       buf.append(")");
 
-      if (1==1) throw new RuntimeException("Not implemented: " + Constants.OPCODE_NAMES[opcode]);
+      if (1 == 1)
+        throw new RuntimeException("Not implemented: " + Constants.OPCODE_NAMES[opcode]);
       break;
 
     /*
@@ -222,7 +226,8 @@ public class JavaScriptConverter {
       }
       buf.append(")");
 
-      if (1==1) throw new RuntimeException("Not implemented: " + Constants.OPCODE_NAMES[opcode]);
+      if (1 == 1)
+        throw new RuntimeException("Not implemented: " + Constants.OPCODE_NAMES[opcode]);
 
     }
       break;
@@ -249,7 +254,8 @@ public class JavaScriptConverter {
     case Constants.IF_ICMPLT:
     case Constants.IF_ICMPNE:
       buf.append("\t\t#" + ((bytes.getIndex() - 1) + bytes.readShort()));
-      if (1==1) throw new RuntimeException("Not implemented: " + Constants.OPCODE_NAMES[opcode]);
+      if (1 == 1)
+        throw new RuntimeException("Not implemented: " + Constants.OPCODE_NAMES[opcode]);
       break;
 
     /*
@@ -258,7 +264,8 @@ public class JavaScriptConverter {
     case Constants.GOTO_W:
     case Constants.JSR_W:
       buf.append("\t\t#" + ((bytes.getIndex() - 1) + bytes.readInt()));
-      if (1==1) throw new RuntimeException("Not implemented: " + Constants.OPCODE_NAMES[opcode]);
+      if (1 == 1)
+        throw new RuntimeException("Not implemented: " + Constants.OPCODE_NAMES[opcode]);
       break;
 
     case Constants.ALOAD_0:
@@ -303,8 +310,7 @@ public class JavaScriptConverter {
     case Constants.LLOAD:
       if (wide) {
         vindex = bytes.readUnsignedShort();
-      }
-      else {
+      } else {
         vindex = bytes.readUnsignedByte();
       }
       operandStack.push(localVariableTable.getLocalVariable(vindex));
@@ -317,8 +323,7 @@ public class JavaScriptConverter {
     case Constants.LSTORE:
       if (wide) {
         vindex = bytes.readUnsignedShort();
-      }
-      else {
+      } else {
         vindex = bytes.readUnsignedByte();
       }
       LocalVariable lhs = localVariableTable.getLocalVariable(vindex);
@@ -329,17 +334,18 @@ public class JavaScriptConverter {
     case Constants.RET:
       if (wide) {
         vindex = bytes.readUnsignedShort();
-      }
-      else {
+      } else {
         vindex = bytes.readUnsignedByte();
       }
       LocalVariable address = localVariableTable.getLocalVariable(vindex);
-      if (1==1) throw new RuntimeException("Not implemented: " + Constants.OPCODE_NAMES[opcode]);
+      if (1 == 1)
+        throw new RuntimeException("Not implemented: " + Constants.OPCODE_NAMES[opcode]);
       break;
 
     /*
-     * The wide byte signals a 16-bit address in the following instruction.
-     * We recurse with the wide param set true and return the result of processing the following opcode in wide mode.
+     * The wide byte signals a 16-bit address in the following instruction. We
+     * recurse with the wide param set true and return the result of processing
+     * the following opcode in wide mode.
      */
     case Constants.WIDE:
       return processByteCode(bytes, operandStack, localVariableTable, cp, true);
@@ -349,7 +355,8 @@ public class JavaScriptConverter {
      */
     case Constants.NEWARRAY:
       buf.append("\t\t<" + Constants.TYPE_NAMES[bytes.readByte()] + ">");
-      if (1==1) throw new RuntimeException("Not implemented: " + Constants.OPCODE_NAMES[opcode]);
+      if (1 == 1)
+        throw new RuntimeException("Not implemented: " + Constants.OPCODE_NAMES[opcode]);
       break;
 
     /*
@@ -358,29 +365,32 @@ public class JavaScriptConverter {
     case Constants.GETFIELD:
       index = bytes.readUnsignedShort();
       buf.append("\t\t" + cp.constantToString(index, Constants.CONSTANT_Fieldref));
-      if (1==1) throw new RuntimeException("Not implemented: " + Constants.OPCODE_NAMES[opcode]);
+      if (1 == 1)
+        throw new RuntimeException("Not implemented: " + Constants.OPCODE_NAMES[opcode]);
       break;
 
     case Constants.GETSTATIC: {
       index = bytes.readUnsignedShort();
       ConstantFieldref fieldref = (ConstantFieldref) cp.getConstant(index, Constants.CONSTANT_Fieldref);
-      ConstantNameAndType nameAndType = (ConstantNameAndType) cp.getConstant(fieldref.getNameAndTypeIndex(), Constants.CONSTANT_NameAndType);
+      ConstantNameAndType nameAndType = (ConstantNameAndType) cp.getConstant(fieldref.getNameAndTypeIndex(),
+          Constants.CONSTANT_NameAndType);
       String fieldName = nameAndType.getName(cp);
       operandStack.push(jsClassName(fieldref.getClass(cp)) + "[\"" + fieldName + "\"]");
     }
       break;
 
-
     case Constants.PUTFIELD:
       index = bytes.readUnsignedShort();
       buf.append("\t\t" + cp.constantToString(index, Constants.CONSTANT_Fieldref));
-      if (1==1) throw new RuntimeException("Not implemented: " + Constants.OPCODE_NAMES[opcode]);
+      if (1 == 1)
+        throw new RuntimeException("Not implemented: " + Constants.OPCODE_NAMES[opcode]);
       break;
 
     case Constants.PUTSTATIC:
       index = bytes.readUnsignedShort();
       buf.append("\t\t" + cp.constantToString(index, Constants.CONSTANT_Fieldref));
-      if (1==1) throw new RuntimeException("Not implemented: " + Constants.OPCODE_NAMES[opcode]);
+      if (1 == 1)
+        throw new RuntimeException("Not implemented: " + Constants.OPCODE_NAMES[opcode]);
       break;
 
     /*
@@ -392,7 +402,8 @@ public class JavaScriptConverter {
     case Constants.INSTANCEOF:
       index = bytes.readUnsignedShort();
       buf.append("\t<" + cp.constantToString(index, Constants.CONSTANT_Class) + ">");
-      if (1==1) throw new RuntimeException("Not implemented: " + Constants.OPCODE_NAMES[opcode]);
+      if (1 == 1)
+        throw new RuntimeException("Not implemented: " + Constants.OPCODE_NAMES[opcode]);
       break;
 
     /*
@@ -423,7 +434,8 @@ public class JavaScriptConverter {
       ConstantMethodref methodref = (ConstantMethodref) cp.getConstant(index, Constants.CONSTANT_Methodref);
       ConstantNameAndType methodNameAndType = (ConstantNameAndType) cp.getConstant(methodref.getNameAndTypeIndex());
 
-      // render name and args first, because the target object comes off the operand stack last
+      // render name and args first, because the target object comes off the
+      // operand stack last
       String nameAndArgs = methodNameAndArgs(operandStack, cp, methodNameAndType);
       buf.append(operandStack.pop()).append(nameAndArgs);
 
@@ -433,10 +445,11 @@ public class JavaScriptConverter {
     case Constants.INVOKEINTERFACE:
       index = bytes.readUnsignedShort();
       int nargs = bytes.readUnsignedByte(); // historical, redundant
-      buf.append("\t" + cp.constantToString(index, Constants.CONSTANT_InterfaceMethodref)
-              + nargs + "\t" + bytes.readUnsignedByte());
+      buf.append("\t" + cp.constantToString(index, Constants.CONSTANT_InterfaceMethodref) + nargs + "\t"
+          + bytes.readUnsignedByte());
       // Last byte is a reserved space
-      if (1==1) throw new RuntimeException("Not implemented: " + Constants.OPCODE_NAMES[opcode]);
+      if (1 == 1)
+        throw new RuntimeException("Not implemented: " + Constants.OPCODE_NAMES[opcode]);
       break;
 
     /*
@@ -447,7 +460,8 @@ public class JavaScriptConverter {
       index = bytes.readUnsignedShort();
 
       buf.append("\t\t" + cp.constantToString(index, cp.getConstant(index).getTag()));
-      if (1==1) throw new RuntimeException("Not implemented: " + Constants.OPCODE_NAMES[opcode]);
+      if (1 == 1)
+        throw new RuntimeException("Not implemented: " + Constants.OPCODE_NAMES[opcode]);
       break;
 
     case Constants.LDC:
@@ -463,7 +477,8 @@ public class JavaScriptConverter {
       index = bytes.readUnsignedShort();
 
       buf.append("\t\t<" + Utility.compactClassName(cp.getConstantString(index, Constants.CONSTANT_Class), false));
-      if (1==1) throw new RuntimeException("Not implemented: " + Constants.OPCODE_NAMES[opcode]);
+      if (1 == 1)
+        throw new RuntimeException("Not implemented: " + Constants.OPCODE_NAMES[opcode]);
       break;
 
     /*
@@ -473,10 +488,11 @@ public class JavaScriptConverter {
       index = bytes.readUnsignedShort();
       int dimensions = bytes.readUnsignedByte();
 
-      buf.append("\t<" + Utility.compactClassName(cp.getConstantString(index, Constants.CONSTANT_Class), false)
-              + ">\t" + dimensions);
+      buf.append("\t<" + Utility.compactClassName(cp.getConstantString(index, Constants.CONSTANT_Class), false) + ">\t"
+          + dimensions);
     }
-    if (1==1) throw new RuntimeException("Not implemented: " + Constants.OPCODE_NAMES[opcode]);
+      if (1 == 1)
+        throw new RuntimeException("Not implemented: " + Constants.OPCODE_NAMES[opcode]);
       break;
 
     /*
@@ -486,13 +502,13 @@ public class JavaScriptConverter {
       if (wide) {
         vindex = bytes.readUnsignedShort();
         constant = bytes.readShort();
-      }
-      else {
+      } else {
         vindex = bytes.readUnsignedByte();
         constant = bytes.readByte();
       }
       buf.append("\t\t%" + vindex + "\t" + constant);
-      if (1==1) throw new RuntimeException("Not implemented: " + Constants.OPCODE_NAMES[opcode]);
+      if (1 == 1)
+        throw new RuntimeException("Not implemented: " + Constants.OPCODE_NAMES[opcode]);
       break;
 
     case Constants.RETURN:
@@ -501,7 +517,9 @@ public class JavaScriptConverter {
       break;
 
     default:
-      if (1==1) throw new RuntimeException("Reached default case while processing " + Constants.OPCODE_NAMES[opcode] + ". Operand count: " + Constants.NO_OF_OPERANDS[opcode]);
+      if (1 == 1)
+        throw new RuntimeException("Reached default case while processing " + Constants.OPCODE_NAMES[opcode]
+            + ". Operand count: " + Constants.NO_OF_OPERANDS[opcode]);
       if (Constants.NO_OF_OPERANDS[opcode] > 0) {
         for (int i = 0; i < Constants.TYPE_OF_OPERANDS[opcode].length; i++) {
           buf.append("\t\t");
@@ -517,7 +535,8 @@ public class JavaScriptConverter {
             break;
 
           default: // Never reached
-            throw new AssertionError("Unreachable default case reached while processing " + Constants.OPCODE_NAMES[opcode]);
+            throw new AssertionError(
+                "Unreachable default case reached while processing " + Constants.OPCODE_NAMES[opcode]);
           }
         }
       }
@@ -544,7 +563,7 @@ public class JavaScriptConverter {
    *          and type.
    */
   private String methodNameAndArgs(final Stack<Object> operandStack, final ConstantPool cp,
-          ConstantNameAndType methodNameAndType) {
+      ConstantNameAndType methodNameAndType) {
     StringBuilder buf = new StringBuilder();
     buf.append("[\"").append(signature(methodNameAndType, cp)).append("\"](");
     String[] argTypes = Utility.methodSignatureArgumentTypes(methodNameAndType.getSignature(cp));
@@ -595,8 +614,7 @@ public class JavaScriptConverter {
 
     if (argv.length == 0) {
       System.err.println("disassemble: No input files specified");
-    }
-    else {
+    } else {
       for (int i = 0; i < argv.length; i++) {
         if (argv[i].endsWith(".class"))
           parser = new ClassParser(argv[i]); // Create parser object
@@ -622,8 +640,7 @@ public class JavaScriptConverter {
         PrintWriter out = new PrintWriter(path + className + ".js");
         try {
           new JavaScriptConverter().convert(javaClass, out);
-        }
-        finally {
+        } finally {
           out.close();
         }
       }
